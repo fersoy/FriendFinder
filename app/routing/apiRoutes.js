@@ -1,5 +1,5 @@
 
-var path = require('path');
+// var path = require('path');
 
 // will receive the list of the friends
 var friends = require('../data/friends.js');
@@ -13,34 +13,45 @@ module.exports = function (app) {
 
     // Add a new friend entry
     app.post('/api/friends', function (req, res) {
+        var totalDifference = 0;
+        var friendMatch = {
+            name: "",
+            photo: "",
+            differences: 10000
+        };
+
         var userInput = req.body;
         var userResponses = userInput.scores;
-        var friendName = '';
-        var friendImage = '';
-        var totalDifference = 10000;
+        var userName = userInput.name;
+
+        var friendScore = userResponses.map(function (item) {
+            return parseInt(item, 10);
+        });
+        userInput = {
+            name: req.body.name,
+            photo: req.body.photo,
+            scores: friendScore
+        };
+        var sum = friendScore.reduce((a, b) => a + b, 0);
 
         // will check the existing friends in the list
         for (var i = 0; i < friends.length; i++) {
 
             // differences 
-            var differences = 0;
-            for (var j = 0; j < userResponses.length; j++) {
-                differences += Math.abs(friends[i].scores[j] - userResponses[j]);
-            }
+            var totalDifference = 0;
+            var newFriendScore = friends[i].scores.reduce((a, b) => a + b, 0);
+            totalDifference += Math.abs(sum - newFriendScore);
 
-            // If it is the lowest difference, it will match to a friend
-            if (differences < totalDifference) {
-
-                totalDifference = differences;
-                friendName = friends[i].name;
-                friendImage = friends[i].photo;
+            if (totalDifference <= friendMatch.differences) {
+                friendMatch.name = friends[i].name;
+                friendMatch.photo = friends[i].photo;
+                friendMatch.differences = totalDifference;
             }
         }
 
         // Add new freinds
         friends.push(userInput);
+        res.json(friendMatch);
 
-        // will send the response
-        res.json({ status: 'OKAY', friendName: friendName, friendImage: friendImage });
     });
 };
